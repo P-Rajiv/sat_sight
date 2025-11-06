@@ -1,0 +1,11 @@
+torch
+torchvision
+transformers
+sentence-transformers
+faiss-gpu
+chromadb
+langchain
+langgraph
+flask
+requests
+pillow
