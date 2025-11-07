@@ -11,52 +11,45 @@ from graph_state import SatSightState
 import requests
 
 # ---- cache heavy objects once ----
-_CLIP_MODEL = None
-_CLIP_PROC  = None
-_LLM_PIPE   = None
-_EMB        = None
-_DB         = None
-_INDEX      = None
-_META       = None
+_CLIP_MODEL = "laion/CLIP-ViT-H-14-laion2B-s32B-b79K"
+_CLIP_PROC  = "laion/CLIP-ViT-H-14-laion2B-s32B-b79K"
+_LLM_PIPE   = "meta-llama/Meta-Llama-3-8B-Instruct"
+_EMB        = "BAAI/bge-large-en-v1.5"
+_DB         = "data/chroma_store"
+_INDEX      = "data/image_index.faiss"
+_META       = "data/image_meta.pkl"
 
 def _clip():
     global _CLIP_MODEL, _CLIP_PROC
-    if _CLIP_MODEL is None:
-        _CLIP_MODEL = CLIPModel.from_pretrained("laion/CLIP-ViT-H-14-laion2B-s32B-b79K")
-        _CLIP_PROC  = CLIPProcessor.from_pretrained("laion/CLIP-ViT-H-14-laion2B-s32B-b79K")
+    _CLIP_MODEL = CLIPModel.from_pretrained(_CLIP_MODEL)
+    _CLIP_PROC  = CLIPProcessor.from_pretrained(_CLIP_PROC)
     return _CLIP_MODEL, _CLIP_PROC
 
 def _llm():
     global _LLM_PIPE
-    if _LLM_PIPE is None:
-        model_id = "meta-llama/Meta-Llama-3-8B-Instruct"
-        tok = AutoTokenizer.from_pretrained(model_id)
-        model = AutoModelForCausalLM.from_pretrained(
-            model_id, torch_dtype=torch.bfloat16, device_map="auto"
-        )
-        _LLM_PIPE = pipeline("text-generation", model=model, tokenizer=tok, max_new_tokens=512)
+    model_id = _LLM_PIPE
+    tok = AutoTokenizer.from_pretrained(model_id)
+    model = AutoModelForCausalLM.from_pretrained(
+        model_id, torch_dtype=torch.bfloat16, device_map="auto"
+    )
+    _LLM_PIPE = pipeline("text-generation", model=model, tokenizer=tok, max_new_tokens=512)
     return _LLM_PIPE
 
 def _textdb():
     global _EMB, _DB
-    if _EMB is None:
-        _EMB = HuggingFaceEmbeddings(
-            model_name="BAAI/bge-large-en-v1.5",
-            model_kwargs={"device": "cuda"},
-            encode_kwargs={"normalize_embeddings": True}
-        )
-    if _DB is None:
-        _DB = Chroma(persist_directory="data/chroma_store", embedding_function=_EMB)
+    _EMB = HuggingFaceEmbeddings(
+        model_name=_EMB,
+        model_kwargs={"device": "cuda"},
+        encode_kwargs={"normalize_embeddings": True}
+    )
+    _DB = Chroma(persist_directory=_DB, embedding_function=_EMB)
     return _DB
 
 def _image_index():
     global _INDEX, _META
-    if _INDEX is None:
-        _INDEX = faiss.read_index("data/image_index.faiss")
-    if _META is None:
-        _META = pickle.load(open("data/image_meta.pkl", "rb"))
+    _INDEX = faiss.read_index(_INDEX)
+    _META = pickle.load(open(_META, "rb"))
     return _INDEX, _META
-
 
 # ---------- NODES (take/return SatSightState) ----------
 
@@ -69,7 +62,6 @@ def vision_encoder_node(state: SatSightState) -> SatSightState:
         emb = emb / emb.norm(p=2, dim=-1, keepdim=True)
     state.image_embedding = emb.cpu().numpy().astype("float32")
     return state
-
 
 def image_retriever_node(state: SatSightState) -> SatSightState:
     index, meta = _image_index()
