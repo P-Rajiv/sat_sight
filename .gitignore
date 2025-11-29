@@ -1,3 +1,4 @@
 env_sat_sight
 dataset
-data hf_token.txt
+data
+hf_token.txt
