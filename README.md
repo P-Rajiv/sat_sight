@@ -1,4 +1,4 @@
-# 🛰️ SatSight — Agentic AI Project
+# SatSight — Agentic AI Project
 
 **SatSight** is an **Agentic AI system** built using **graph-based orchestration** of reasoning and tool-using agents.  
 It demonstrates how intelligent workflows can be dynamically compiled and executed for reasoning, decision-making, and environmental or satellite-sight analysis tasks.
